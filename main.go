@@ -32,12 +32,12 @@ func generateBlock(oldBlock Block, Data string) Block {
     t := time.Now()
 
     newBlock.Index = oldBlock.Index + 1
-    newBlock.Timestamp = t.String()
+    newBlock.Timestamp = t.Format(time.RFC3339)
     newBlock.Data = Data
     newBlock.PrevHash = oldBlock.Hash
     newBlock.Nonce = 0
 
-    for !isHashValid(newBlock.Hash) {
+    for !isHashValid(newBlock.Hash, 4) {
         newBlock.Nonce++
         newBlock.Hash = calculateHash(newBlock)
     }
@@ -45,12 +45,16 @@ func generateBlock(oldBlock Block, Data string) Block {
     return newBlock
 }
 
-func isHashValid(hash string) bool {
-    return hash[:4] == "0000"
+func isHashValid(hash string, difficulty int) bool {
+    prefix := ""
+    for i := 0; i < difficulty; i++ {
+        prefix += "0"
+    }
+    return hash[:difficulty] == prefix
 }
 
 func main() {
-    genesisBlock := Block{0, time.Now().String(), "Genesis Block", "", "", 0}
+    genesisBlock := Block{0, time.Now().Format(time.RFC3339), "Genesis Block", "", "", 0}
     genesisBlock.Hash = calculateHash(genesisBlock)
     Blockchain = append(Blockchain, genesisBlock)
 
