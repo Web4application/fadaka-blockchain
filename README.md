@@ -1,4 +1,4 @@
-# Web4asset Blockchain
+# fadaka Blockchain
 
 Web4asset is a blockchain-based project designed to develop and manage digital assets. This project includes smart contracts, wallet management, network communication, and a user-friendly interface to create a comprehensive solution for handling digital assets.
 
