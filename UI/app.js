@@ -25,7 +25,7 @@ function App() {
 
     return (
         <div>
-            <h1>Web4asset Wallet</h1>
+            <h1>fadaka Wallet</h1>
             <button onClick={createWallet}>Create Wallet</button>
             {wallet && <div>Public Key: {wallet.publicKey}</div>}
             <h2>Transactions</h2>
