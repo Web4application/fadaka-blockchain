@@ -1,4 +1,3 @@
-// Example using React for a simple UI
 import React, { useState } from 'react';
 
 function App() {
