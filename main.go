@@ -13,9 +13,10 @@ type Block struct {
     Timestamp string
     Data      string
     PrevHash  string
-    Hash      string
     Nonce     int
+    Hash      string
 }
+
 
 var Blockchain []Block
 
