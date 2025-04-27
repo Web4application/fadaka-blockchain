@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fadaka Blockchain Wallet Generator</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script> <!-- For making HTTP requests -->
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Fadaka Blockchain Wallet Generator</h1>
+            <p>Generate and interact with wallets on the Fadaka blockchain.</p>
+        </header>
+
+        <section class="wallet-generator">
+            <button id="generate-wallet-btn">Generate Wallet</button>
+            <div id="wallet-info">
+                <h3>Your Generated Wallet:</h3>
+                <p id="wallet-address">Address: </p>
+                <p id="wallet-private-key">Private Key: </p>
+            </div>
+        </section>
+        
+        <footer>
+            <p>&copy; 2025 Fadaka Blockchain</p>
+        </footer>
+    </div>
+
+    <script>
+        document.getElementById('generate-wallet-btn').addEventListener('click', function() {
+            // Show loading or waiting message while generating the wallet
+            document.getElementById('wallet-address').innerText = 'Address: Generating...';
+            document.getElementById('wallet-private-key').innerText = 'Private Key: Generating...';
+
+            // Make an API call to the backend to generate a wallet
+            axios.get('http://localhost:5000/generate_wallet')
+                .then(function(response) {
+                    // On success, display the wallet details
+                    const wallet = response.data;
+                    document.getElementById('wallet-address').innerText = 'Address: ' + wallet.public_key;
+                    document.getElementById('wallet-private-key').innerText = 'Private Key: ' + wallet.private_key;
+                })
+                .catch(function(error) {
+                    // On error, display an error message
+                    console.error('Error generating wallet:', error);
+                    document.getElementById('wallet-address').innerText = 'Error generating wallet';
+                    document.getElementById('wallet-private-key').innerText = '';
+                });
+        });
+    </script>
+</body>
+</html>
