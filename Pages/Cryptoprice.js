@@ -6,4 +6,4 @@ async function getCryptoPrice(crypto) {
 }
 
 // Example usage
-getCryptoPrice('bitcoin');
+getCryptoPrice('all');
