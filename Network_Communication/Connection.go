@@ -21,6 +21,6 @@ func handleConnection(conn net.Conn) {
 
 func connectToPeer(address string) {
     conn, _ := net.Dial("tcp", address)
-    fmt.Fprintf(conn, "Hello from Web4asset\n")
+    fmt.Fprintf(conn, "Hello from fadaka\n")
     conn.Close()
 }
