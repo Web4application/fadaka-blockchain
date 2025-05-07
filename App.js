@@ -1,47 +1,40 @@
-import React, { useState, useEffect } from "react";
-import { IntlProvider, FormattedMessage } from "react-intl";
+import React, { useContext } from "react";
+import { IntlProvider } from "react-intl";
+import { IntlContext, IntlProvider as CustomIntlProvider } from "./context/IntlContext";
 import Header from "./components/Header";
-import Transaction from "./components/Transaction";
 import Wallet from "./components/Wallet";
+import Transaction from "./components/Transaction";
+import LanguageSwitcher from "./components/LanguageSwitcher";
 import "./assets/styles.css";
 import logo from "./assets/logo.png";
 
-// Import language files
-import en from "./i18n/en.json";
-import fr from "./i18n/fr.json";
-import es from "./i18n/es.json";
-
-const messages = { en, fr, es };
-
-function App() {
-  const browserLanguage = navigator.language.slice(0, 2);
-  const defaultLanguage = ["en", "fr", "es"].includes(browserLanguage) ? browserLanguage : "en";
-  const [locale, setLocale] = useState(defaultLanguage);
-
-  const handleLanguageChange = (e) => {
-    setLocale(e.target.value);
-  };
+const AppContent = () => {
+  const { locale, messages } = useContext(IntlContext);
 
   return (
-    <IntlProvider locale={locale} messages={messages[locale]}>
+    <IntlProvider locale={locale} messages={messages}>
       <div className="App">
         <header className="header">
           <img src={logo} className="logo" alt="Fadaka Logo" />
-          <h1>
-            <FormattedMessage id="app.title" />
-          </h1>
-          <select value={locale} onChange={handleLanguageChange}>
-            <option value="en">English</option>
-            <option value="fr">Français</option>
-            <option value="es">Español</option>
-          </select>
+          <LanguageSwitcher />
+          <Header balance={5000} />
         </header>
 
-        <Wallet address="0x123ABC" balance={5000} />
-        <Transaction sender="0x123ABC" receiver="0x456DEF" amount={150} />
+        <main>
+          <Wallet address="0x123ABC" balance={1500} />
+          <Transaction sender="0x123ABC" receiver="0x456DEF" amount={300} />
+        </main>
       </div>
     </IntlProvider>
   );
-}
+};
+
+const App = () => {
+  return (
+    <CustomIntlProvider>
+      <AppContent />
+    </CustomIntlProvider>
+  );
+};
 
 export default App;
