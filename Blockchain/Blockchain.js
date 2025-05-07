@@ -1,5 +1,8 @@
 const Block = require('./Block');
 const ProofOfWork = require('./ProofOfWork');
+const config = require('../config/config');
+const difficulty = config.blockchain.difficulty;
+const miningReward = config.blockchain.miningReward;
 
 class Blockchain {
     constructor() {
