@@ -11,6 +11,17 @@ app.use(bodyParser.json());
 const blockchain = new Blockchain();
 const myWallet = new Wallet();
 
+const config = require('./config/config');
+const express = require('express');
+const app = express();
+
+// Use API port configuration
+const port = config.api.port;
+
+app.listen(port, () => {
+    console.log(`API server running on port ${port}`);
+});
+
 // Send Fadaka Coins
 app.post('/sendTransaction', (req, res) => {
     const { sender, receiver, amount } = req.body;
