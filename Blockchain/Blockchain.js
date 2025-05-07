@@ -1,67 +1,104 @@
 const Block = require('./Block');
+const Transaction = require('./Transaction');
 const ProofOfWork = require('./ProofOfWork');
+const CryptoUtils = require('../utils/CryptoUtils');
 const config = require('../config/config');
-const difficulty = config.blockchain.difficulty;
-const miningReward = config.blockchain.miningReward;
 
 class Blockchain {
     constructor() {
         this.chain = [this.createGenesisBlock()];
-        this.difficulty = 4; // Difficulty for mining
         this.pendingTransactions = [];
-        this.miningReward = 100; // Reward for mining a block
+        this.miningReward = config.blockchain.miningReward;
     }
 
+    /**
+     * Create the Genesis Block (first block of the blockchain)
+     * @returns {Block} - The genesis block
+     */
     createGenesisBlock() {
-        return new Block(0, Date.now(), 'Genesis Block', '0');
+        const genesisData = {
+            sender: "0x0000",
+            receiver: "0x0000",
+            amount: 0,
+        };
+
+        return new Block(0, Date.now(), genesisData, "0");
     }
 
+    /**
+     * Get the latest block in the chain
+     * @returns {Block} - The latest block
+     */
     getLatestBlock() {
         return this.chain[this.chain.length - 1];
     }
 
+    /**
+     * Add a new transaction to the list of pending transactions
+     * @param {Transaction} transaction - The transaction object
+     */
     addTransaction(transaction) {
-        if (!transaction.sender || !transaction.receiver || !transaction.amount) {
-            throw new Error('Invalid transaction');
+        // Verify the transaction signature
+        const isValid = CryptoUtils.verifySignature(
+            transaction.sender,
+            transaction,
+            transaction.signature
+        );
+
+        if (!isValid) {
+            throw new Error('Transaction signature is invalid.');
         }
+
         this.pendingTransactions.push(transaction);
     }
 
+    /**
+     * Mine pending transactions and reward the miner
+     * @param {string} miningRewardAddress - The address of the miner
+     */
     minePendingTransactions(miningRewardAddress) {
-        const block = new Block(
+        const proofOfWork = new ProofOfWork(this);
+        const newBlock = new Block(
             this.chain.length,
             Date.now(),
             this.pendingTransactions,
             this.getLatestBlock().hash
         );
 
-        const proofOfWork = new ProofOfWork(this);
-        proofOfWork.mineBlock(block);
-
-        console.log('Mining complete.');
-        this.chain.push(block);
+        newBlock.hash = proofOfWork.mineBlock(newBlock);
+        this.chain.push(newBlock);
 
         // Reward the miner
-        this.pendingTransactions = [
-            new Transaction(null, miningRewardAddress, this.miningReward, null),
-        ];
+        const rewardTransaction = new Transaction(null, miningRewardAddress, this.miningReward, null);
+        this.pendingTransactions = [rewardTransaction];
     }
 
+    /**
+     * Get the balance of a specific address
+     * @param {string} address - The wallet address
+     * @returns {number} - The balance
+     */
     getBalanceOfAddress(address) {
         let balance = 0;
+
         for (const block of this.chain) {
-            for (const tx of block.data) {
-                if (tx.receiver === address) {
-                    balance += tx.amount;
+            for (const transaction of block.data) {
+                if (transaction.sender === address) {
+                    balance -= transaction.amount;
                 }
-                if (tx.sender === address) {
-                    balance -= tx.amount;
+                if (transaction.receiver === address) {
+                    balance += transaction.amount;
                 }
             }
         }
+
         return balance;
     }
 
+    /**
+     * Verify the integrity of the blockchain
+     * @returns {boolean} - True if valid, false otherwise
+     */
     isChainValid() {
         for (let i = 1; i < this.chain.length; i++) {
             const currentBlock = this.chain[i];
