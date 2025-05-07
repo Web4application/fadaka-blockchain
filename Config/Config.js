@@ -52,3 +52,13 @@ module.exports = {
         },
     },
 };
+
+require('dotenv').config();
+
+module.exports = {
+    security: {
+        encryption: {
+            key: process.env.ENCRYPTION_KEY, // Use environment variable
+        },
+    },
+};
