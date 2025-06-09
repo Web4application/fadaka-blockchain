@@ -58,3 +58,10 @@ module.exports = {
     target: "ethers-v6"
   }
 };
+
+networks: {
+  fadaka: {
+    url: "https://rpc.fadaka.io",
+    accounts: [PRIVATE_KEY_HERE]
+  }
+}
