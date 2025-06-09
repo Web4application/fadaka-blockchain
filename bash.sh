@@ -12,8 +12,7 @@ npm install --save-dev hardhat @nomicfoundation/hardhat-toolbox dotenv
 npm install @openzeppelin/contracts
 npx hardhat compile
 npx hardhat compile
-git clone https://github.com/Web4application/fadaka-blockchain.git
-cd fadaka-blockchain
+git clone https://github.com/Web4application/fadakacoin.git
 
 npm install husky --save-dev
 npx husky install
