@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title> FADAKA </title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 30px auto;
+      padding: 20px;
+      background: #f9f9f9;
+      color: #333;
+    }
+    h1 {
+      text-align: center;
+      color: #2c3e50;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 5px 0;
+      cursor: pointer;
+      border: none;
+      background-color: #3498db;
+      color: white;
+      font-size: 1em;
+      border-radius: 5px;
+      transition: background-color 0.3s ease;
+    }
+    button:hover {
+      background-color: #2980b9;
+    }
+    input[type="text"], input[type="number"] {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0 15px 0;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      box-sizing: border-box;
+      font-size: 1em;
+    }
+    #log {
+      background: #222;
+      color: #eee;
+      padding: 15px;
+      height: 150px;
+      overflow-y: auto;
+      border-radius: 5px;
+      font-family: monospace;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Fadaka Blockchain Wallet</h1>
+
+  <button id="connectBtn">Connect Wallet</button>
+  <button id="disconnectBtn" disabled>Disconnect Wallet</button>
+
+  <div id="walletInfo" style="display:none;">
+    <p><strong>Address:</strong> <span id="address"></span></p>
+    <p><strong>Balance:</strong> <span id="balance">0</span> FAD</p>
+
+    <h3>Send FadakaCoin</h3>
+    <label for="toAddress">To Address:</label>
+    <input type="text" id="toAddress" placeholder="0x..." />
+
+    <label for="amount">Amount:</label>
+    <input type="number" id="amount" min="0" step="0.01" placeholder="Amount to send" />
+
+    <button id="sendBtn">Send</button>
+
+    <h3>Swap FadakaCoin</h3>
+    <label for="swapAmount">Amount to Swap:</label>
+    <input type="number" id="swapAmount" placeholder="Amount" min="0" step="any" />
+    <button id="approveBtn">Approve Swap</button>
+    <button id="swapBtn" disabled>Swap</button>
+  </div>
+
+  <div id="log"></div>
+
+<script>
+  const fadakaABI = [/* Your FadakaCoin ABI here */];
+  const swapABI = ["function swap(uint256 fadakaAmount) external", "function decimals() view returns (uint8)"];
+
+  const fadakaAddress = "0xYourFadakaTokenAddress";
+  const swapContractAddress = "0xYourSwapContractAddress";
+
+  let provider, signer, contract, fadakaTokenContract, swapContract;
+
+  const connectBtn = document.getElementById("connectBtn");
+  const disconnectBtn = document.getElementById("disconnectBtn");
+  const walletInfo = document.getElementById("walletInfo");
+  const addressSpan = document.getElementById("address");
+  const balanceSpan = document.getElementById("balance");
+  const toAddressInput = document.getElementById("toAddress");
+  const amountInput = document.getElementById("amount");
+  const sendBtn = document.getElementById("sendBtn");
+  const logDiv = document.getElementById("log");
+  const swapAmountInput = document.getElementById("swapAmount");
+  const approveBtn = document.getElementById("approveBtn");
+  const swapBtn = document.getElementById("swapBtn");
+
+  function log(message) {
+    const p = document.createElement("p");
+    p.textContent = message;
+    logDiv.appendChild(p);
+    logDiv.scrollTop = logDiv.scrollHeight;
+  }
+
+  async function connectWallet() {
+    if (!window.ethereum) {
+      alert("MetaMask or another Ethereum wallet extension required!");
+      return;
+    }
+    try {
+      await window.ethereum.request({ method: "eth_requestAccounts" });
+      provider = new ethers.providers.Web3Provider(window.ethereum);
+      signer = provider.getSigner();
+      const userAddress = await signer.getAddress();
+      addressSpan.textContent = userAddress;
+      walletInfo.style.display = "block";
+      connectBtn.disabled = true;
+      disconnectBtn.disabled = false;
+
+      contract = new ethers.Contract(fadakaAddress, fadakaABI, signer);
+      fadakaTokenContract = contract;
+      swapContract = new ethers.Contract(swapContractAddress, swapABI, signer);
+
+      updateBalance();
+      log("Wallet connected: " + userAddress);
+      approveBtn.disabled = false;
+    } catch (err) {
+      log("Error connecting wallet: " + err.message);
+    }
+  }
+
+  async function disconnectWallet() {
+    provider = null;
+    signer = null;
+    contract = null;
+    fadakaTokenContract = null;
+    swapContract = null;
+    addressSpan.textContent = "";
+    balanceSpan.textContent = "0";
+    walletInfo.style.display = "none";
+    connectBtn.disabled = false;
+    disconnectBtn.disabled = true;
+    log("Wallet disconnected");
+  }
+
+  async function updateBalance() {
+    if (!signer) return;
+    try {
+      const userAddress = await signer.getAddress();
+      const balanceBigNumber = await contract.balanceOf(userAddress);
+      const decimals = await contract.decimals();
+      const balanceFormatted = ethers.utils.formatUnits(balanceBigNumber, decimals);
+      balanceSpan.textContent = balanceFormatted;
+    } catch (err) {
+      log("Error fetching balance: " + err.message);
+    }
+  }
+
+  async function sendTokens() {
+    const to = toAddressInput.value.trim();
+    const amount = amountInput.value.trim();
+    if (!ethers.utils.isAddress(to)) {
+      alert("Invalid recipient address.");
+      return;
+    }
+    if (!amount || isNaN(amount) || Number(amount) <= 0) {
+      alert("Invalid amount.");
+      return;
+    }
+    try {
+      const decimals = await contract.decimals();
+      const amountParsed = ethers.utils.parseUnits(amount, decimals);
+
+      log(`Sending ${amount} FAD to ${to}...`);
+      const tx = await contract.transfer(to, amountParsed);
+      log("Transaction sent, waiting confirmation...");
+      await tx.wait();
+      log("Transaction confirmed! Hash: " + tx.hash);
+      updateBalance();
+      toAddressInput.value = "";
+      amountInput.value = "";
+    } catch (err) {
+      log("Transaction failed: " + err.message);
+    }
+  }
+
+  async function approveSwap() {
+    const amount = swapAmountInput.value;
+    if (!amount || Number(amount) <= 0) return alert("Enter amount to approve");
+    try {
+      const decimals = await fadakaTokenContract.decimals();
+      const amountParsed = ethers.utils.parseUnits(amount, decimals);
+      const tx = await fadakaTokenContract.approve(swapContractAddress, amountParsed);
+      log("Approval transaction sent...");
+      await tx.wait();
+      log("Approval confirmed!");
+      approveBtn.disabled = true;
+      swapBtn.disabled = false;
+    } catch (err) {
+      log("Approval failed: " + err.message);
+    }
+  }
+
+  async function swapTokens() {
+    const amount = swapAmountInput.value;
+    if (!amount || Number(amount) <= 0) return alert("Enter amount to swap");
+    try {
+      let decimals;
+      try {
+        decimals = await swapContract.decimals();
+      } catch {
+        decimals = await fadakaTokenContract.decimals();
+      }
+      const amountParsed = ethers.utils.parseUnits(amount, decimals);
+      const tx = await swapContract.swap(amountParsed);
+      log("Swap transaction sent...");
+      await tx.wait();
+      log("Swap confirmed!");
+      approveBtn.disabled = false;
+      swapBtn.disabled = true;
+      swapAmountInput.value = "";
+      updateBalance();
+    } catch (err) {
+      log("Swap failed: " + err.message);
+    }
+  }
+
+  connectBtn.onclick = connectWallet;
+  disconnectBtn.onclick = disconnectWallet;
+  sendBtn.onclick = sendTokens;
+  approveBtn.onclick = approveSwap;
+  swapBtn.onclick = swapTokens;
+</script>
+<script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
+</body>
+</html>
