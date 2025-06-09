@@ -39,4 +39,9 @@
     "solidity-docgen": "^0.6.0",
     "typechain": "^8.0.0"
   }
+"scripts": {
+  "lint": "eslint .",
+  "test": "jest",
+  "prepare": "husky install"
+ }
 }
