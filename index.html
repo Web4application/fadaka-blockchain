@@ -246,6 +246,33 @@
       }
     }
 
+    async function swapTokens(fromTokenAddress, toTokenAddress, amount) {
+  if (!contract) {
+    alert("Please connect your wallet first.");
+    return;
+  }
+
+  try {
+    const decimals = await contract.decimals(); // Or get decimals for the fromToken if ERC20
+
+    // Convert amount to smallest unit
+    const amountParsed = ethers.utils.parseUnits(amount.toString(), decimals);
+
+    // Call the swap function on your contract, example:
+    const tx = await contract.swap(fromTokenAddress, toTokenAddress, amountParsed);
+
+    log("Swap transaction sent, waiting confirmation...");
+    await tx.wait();
+    log("Swap confirmed! Tx hash: " + tx.hash);
+
+    // Update balances or UI as needed
+    updateBalance();
+
+  } catch (error) {
+    log("Swap failed: " + error.message);
+  }
+}
+
     async function sendTokens() {
       if (!contract) {
         alert("Please connect your wallet first.");
