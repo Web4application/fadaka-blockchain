@@ -1,1 +1,1 @@
-go mod init web4asset-blockchain
+go mod init Fadaka-blockchain
