@@ -1,0 +1,30 @@
+name: Deploy to Fadaka
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 18
+
+      - name: 📦 Install Dependencies
+        run: npm install
+
+      - name: 🛠️ Compile Contracts
+        run: npm run compile
+
+      - name: 🚀 Deploy to Fadaka Testnet
+        run: npm run deploy:testnet
+        env:
+          FADAKA_TESTNET_RPC: ${{ secrets.FADAKA_TESTNET_RPC }}
+          FADAKA_PRIVATE_KEY: ${{ secrets.FADAKA_PRIVATE_KEY }}
