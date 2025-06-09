@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Fadaka Blockchain</title>
+  <title>Fadaka Blockchain Wallet & Dashboard</title>
   <style>
     body {
       font-family: Arial, sans-serif;
-      max-width: 600px;
+      max-width: 700px;
       margin: 30px auto;
       padding: 20px;
       background: #f9f9f9;
       color: #333;
     }
-    h1, h3 {
+    h1, h2, h3 {
       text-align: center;
       color: #2c3e50;
     }
@@ -28,10 +28,14 @@
       border-radius: 5px;
       transition: background-color 0.3s ease;
     }
-    button:hover {
+    button:hover:not(:disabled) {
       background-color: #2980b9;
     }
-    input[type="text"], input[type="number"] {
+    button:disabled {
+      background-color: #999;
+      cursor: not-allowed;
+    }
+    input[type="text"], input[type="number"], select {
       width: 100%;
       padding: 8px;
       margin: 5px 0 15px 0;
@@ -50,161 +54,346 @@
       font-family: monospace;
       margin-top: 20px;
     }
+    #qrCode {
+      margin: 10px auto;
+      display: block;
+      width: 160px;
+      height: 160px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    table, th, td {
+      border: 1px solid #ccc;
+    }
+    th, td {
+      padding: 8px;
+      text-align: center;
+    }
+    .flex-row {
+      display: flex;
+      gap: 15px;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+    .flex-row > div {
+      flex: 1 1 48%;
+    }
   </style>
 </head>
 <body>
 
-  <h1>Fadaka Blockchain Wallet</h1>
+  <h1>Fadaka Blockchain Wallet & Dashboard</h1>
 
-  <button id="connectBtn">Connect Wallet</button>
-  <button id="disconnectBtn" disabled>Disconnect Wallet</button>
+  <div class="flex-row">
+    <button id="connectBtn">Connect Wallet</button>
+    <button id="disconnectBtn" disabled>Disconnect Wallet</button>
+  </div>
 
   <div id="walletInfo" style="display:none;">
     <p><strong>Address:</strong> <span id="address"></span></p>
     <p><strong>Balance:</strong> <span id="balance">0</span> FAD</p>
 
-    <h3>Send FAD</h3>
+    <canvas id="qrCode"></canvas>
+
+    <h3>Send FadakaCoin</h3>
     <label for="toAddress">To Address:</label>
     <input type="text" id="toAddress" placeholder="0x..." />
     
     <label for="amount">Amount:</label>
     <input type="number" id="amount" min="0" step="0.01" placeholder="Amount to send" />
 
+    <button id="estimateGasBtn">Estimate Gas Fee</button>
+    <p id="gasFeeEstimate" style="font-weight:bold;"></p>
+
     <button id="sendBtn">Send</button>
 
-    <h3>Swap FAD</h3>
-    <label for="swapAmount">Amount to Swap:</label>
-    <input type="number" id="swapAmount" min="0" step="0.01" placeholder="FAD amount to swap" />
+    <h3>Transaction History</h3>
+    <table id="txHistoryTable">
+      <thead>
+        <tr><th>Txn Hash</th><th>To</th><th>Amount (FAD)</th><th>Status</th></tr>
+      </thead>
+      <tbody id="txHistoryBody">
+        <!-- Transactions will appear here -->
+      </tbody>
+    </table>
+
+    <h3>FadakaCoin Price</h3>
+    <p><strong>Price (USD):</strong> $<span id="priceTicker">-</span></p>
+
+    <h3>Swap Tokens (Placeholder)</h3>
+    <label for="swapFrom">From:</label>
+    <select id="swapFrom">
+      <option value="FAD">FAD (FadakaCoin)</option>
+      <option value="ETH">ETH (Ethereum)</option>
+    </select>
+
+    <label for="swapTo">To:</label>
+    <select id="swapTo">
+      <option value="ETH">ETH (Ethereum)</option>
+      <option value="FAD">FAD (FadakaCoin)</option>
+    </select>
+
+    <label for="swapAmount">Amount:</label>
+    <input type="number" id="swapAmount" min="0" step="0.01" placeholder="Amount to swap" />
+
     <button id="swapBtn">Swap</button>
   </div>
 
   <div id="log"></div>
 
-<script>
-  const fadakaABI = [
-    "function balanceOf(address) view returns (uint256)",
-    "function decimals() view returns (uint8)",
-    "function transfer(address to, uint amount) returns (bool)",
-    "function swap(uint amount) returns (bool)"
-  ];
+  <!-- Dependencies -->
+  <script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
+  <script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
 
-  const fadakaAddress = "0xF3b4902b1eAC3223cD109aeB7369fEEE60056FfE";
+  <script>
+    // Replace with your contract ABI and address
+    const fadakaABI = [/* Your contract ABI here */];
+    const fadakaAddress = "0xYourContractAddressHere";
 
-  let provider, signer, contract;
+    let provider;
+    let signer;
+    let contract;
 
-  const connectBtn = document.getElementById("connectBtn");
-  const disconnectBtn = document.getElementById("disconnectBtn");
-  const walletInfo = document.getElementById("walletInfo");
-  const addressSpan = document.getElementById("address");
-  const balanceSpan = document.getElementById("balance");
-  const toAddressInput = document.getElementById("toAddress");
-  const amountInput = document.getElementById("amount");
-  const swapAmountInput = document.getElementById("swapAmount");
-  const sendBtn = document.getElementById("sendBtn");
-  const swapBtn = document.getElementById("swapBtn");
-  const logDiv = document.getElementById("log");
+    const connectBtn = document.getElementById("connectBtn");
+    const disconnectBtn = document.getElementById("disconnectBtn");
+    const walletInfo = document.getElementById("walletInfo");
+    const addressSpan = document.getElementById("address");
+    const balanceSpan = document.getElementById("balance");
+    const toAddressInput = document.getElementById("toAddress");
+    const amountInput = document.getElementById("amount");
+    const sendBtn = document.getElementById("sendBtn");
+    const logDiv = document.getElementById("log");
+    const gasEstimateBtn = document.getElementById("estimateGasBtn");
+    const gasFeeEstimateP = document.getElementById("gasFeeEstimate");
+    const txHistoryBody = document.getElementById("txHistoryBody");
+    const priceTicker = document.getElementById("priceTicker");
+    const qrCodeCanvas = document.getElementById("qrCode");
+    const swapFrom = document.getElementById("swapFrom");
+    const swapTo = document.getElementById("swapTo");
+    const swapAmountInput = document.getElementById("swapAmount");
+    const swapBtn = document.getElementById("swapBtn");
 
-  function log(message) {
-    const p = document.createElement("p");
-    p.textContent = message;
-    logDiv.appendChild(p);
-    logDiv.scrollTop = logDiv.scrollHeight;
-  }
+    // Simple in-memory tx history - replace with real blockchain data API
+    let txHistory = [];
 
-  async function connectWallet() {
-    if (!window.ethereum) {
-      alert("MetaMask or another Ethereum wallet is required.");
-      return;
+    function log(message) {
+      const p = document.createElement("p");
+      p.textContent = message;
+      logDiv.appendChild(p);
+      logDiv.scrollTop = logDiv.scrollHeight;
     }
-    try {
-      await ethereum.request({ method: "eth_requestAccounts" });
-      provider = new ethers.providers.Web3Provider(window.ethereum);
-      signer = provider.getSigner();
-      const userAddress = await signer.getAddress();
-      addressSpan.textContent = userAddress;
-      contract = new ethers.Contract(fadakaAddress, fadakaABI, signer);
 
-      walletInfo.style.display = "block";
-      connectBtn.disabled = true;
-      disconnectBtn.disabled = false;
+    async function connectWallet() {
+      if (!window.ethereum) {
+        alert("MetaMask or another Ethereum wallet extension required!");
+        return;
+      }
+      try {
+        await window.ethereum.request({ method: "eth_requestAccounts" });
+        provider = new ethers.providers.Web3Provider(window.ethereum);
+        signer = provider.getSigner();
+        const userAddress = await signer.getAddress();
+        addressSpan.textContent = userAddress;
+        walletInfo.style.display = "block";
+        connectBtn.disabled = true;
+        disconnectBtn.disabled = false;
 
-      await updateBalance();
-      log("Wallet connected: " + userAddress);
-    } catch (err) {
-      log("Connection failed: " + err.message);
+        // Generate QR code for address
+        QRCode.toCanvas(qrCodeCanvas, userAddress, { width: 160 }, function (error) {
+          if (error) log("QR Code generation error: " + error);
+        });
+
+        // Initialize contract instance
+        contract = new ethers.Contract(fadakaAddress, fadakaABI, signer);
+
+        updateBalance();
+        loadTxHistory();
+        fetchPriceTicker();
+        log("Wallet connected: " + userAddress);
+      } catch (err) {
+        log("Error connecting wallet: " + err.message);
+      }
     }
-  }
 
-  async function disconnectWallet() {
-    provider = null;
-    signer = null;
-    contract = null;
-    addressSpan.textContent = "";
-    balanceSpan.textContent = "0";
-    walletInfo.style.display = "none";
-    connectBtn.disabled = false;
-    disconnectBtn.disabled = true;
-    log("Wallet disconnected");
-  }
-
-  async function updateBalance() {
-    try {
-      const address = await signer.getAddress();
-      const rawBalance = await contract.balanceOf(address);
-      const decimals = await contract.decimals();
-      const balance = ethers.utils.formatUnits(rawBalance, decimals);
-      balanceSpan.textContent = balance;
-    } catch (err) {
-      log("Balance error: " + err.message);
+    async function disconnectWallet() {
+      provider = null;
+      signer = null;
+      contract = null;
+      addressSpan.textContent = "";
+      balanceSpan.textContent = "0";
+      walletInfo.style.display = "none";
+      connectBtn.disabled = false;
+      disconnectBtn.disabled = true;
+      gasFeeEstimateP.textContent = "";
+      qrCodeCanvas.getContext('2d').clearRect(0, 0, qrCodeCanvas.width, qrCodeCanvas.height);
+      clearTxHistory();
+      log("Wallet disconnected");
     }
-  }
 
-  async function sendTokens() {
-    try {
+    async function updateBalance() {
+      if (!signer) return;
+      try {
+        const userAddress = await signer.getAddress();
+        const balanceBigNumber = await contract.balanceOf(userAddress);
+        const decimals = await contract.decimals();
+        const balanceFormatted = ethers.utils.formatUnits(balanceBigNumber, decimals);
+        balanceSpan.textContent = balanceFormatted;
+      } catch (err) {
+        log("Error fetching balance: " + err.message);
+      }
+    }
+
+    async function sendTokens() {
+      if (!contract) {
+        alert("Please connect your wallet first.");
+        return;
+      }
       const to = toAddressInput.value.trim();
       const amount = amountInput.value.trim();
-      if (!ethers.utils.isAddress(to)) return alert("Invalid address");
-      if (!amount || isNaN(amount) || Number(amount) <= 0) return alert("Enter valid amount");
+      if (!ethers.utils.isAddress(to)) {
+        alert("Invalid recipient address.");
+        return;
+      }
+      if (!amount || isNaN(amount) || Number(amount) <= 0) {
+        alert("Invalid amount.");
+        return;
+      }
+      try {
+        const decimals = await contract.decimals();
+        const amountParsed = ethers.utils.parseUnits(amount, decimals);
 
-      const decimals = await contract.decimals();
-      const parsedAmount = ethers.utils.parseUnits(amount, decimals);
+        log(`Sending ${amount} FAD to ${to}...`);
+        const tx = await contract.transfer(to, amountParsed);
+        log("Transaction sent, waiting confirmation...");
+        await tx.wait();
+        log("Transaction confirmed! Hash: " + tx.hash);
 
-      log(`Sending ${amount} FAD to ${to}...`);
-      const tx = await contract.transfer(to, parsedAmount);
-      await tx.wait();
-      log("Transfer complete: " + tx.hash);
-      await updateBalance();
-    } catch (err) {
-      log("Send failed: " + err.message);
+        // Add to tx history and refresh
+        txHistory.unshift({ hash: tx.hash, to, amount, status: 'Confirmed' });
+        renderTxHistory();
+
+        updateBalance();
+        toAddressInput.value = "";
+        amountInput.value = "";
+        gasFeeEstimateP.textContent = "";
+      } catch (err) {
+        log("Transaction failed: " + err.message);
+      }
     }
-  }
 
-  async function swapTokens() {
-    try {
-      const amount = swapAmountInput.value.trim();
-      if (!amount || isNaN(amount) || Number(amount) <= 0) return alert("Enter valid swap amount");
+    async function estimateGasFee() {
+      if (!contract) {
+        alert("Please connect your wallet first.");
+        return;
+      }
+      const to = toAddressInput.value.trim();
+      const amount = amountInput.value.trim();
+      if (!ethers.utils.isAddress(to)) {
+        alert("Invalid recipient address for gas estimate.");
+        return;
+      }
+      if (!amount || isNaN(amount) || Number(amount) <= 0) {
+        alert("Invalid amount for gas estimate.");
+        return;
+      }
+      try {
+        const decimals = await contract.decimals();
+        const amountParsed = ethers.utils.parseUnits(amount, decimals);
 
-      const decimals = await contract.decimals();
-      const parsedAmount = ethers.utils.parseUnits(amount, decimals);
-
-      log(`Swapping ${amount} FAD...`);
-      const tx = await contract.swap(parsedAmount);
-      await tx.wait();
-      log("Swap complete: " + tx.hash);
-      await updateBalance();
-    } catch (err) {
-      log("Swap failed: " + err.message);
+        const gasEstimate = await contract.estimateGas.transfer(to, amountParsed);
+        const gasPrice = await provider.getGasPrice();
+        const fee = gasEstimate.mul(gasPrice);
+        const feeInEth = ethers.utils.formatEther(fee);
+        gasFeeEstimateP.textContent = `Estimated Gas Fee: ${feeInEth} ETH`;
+        log(`Gas estimate: ${gasEstimate.toString()} units, Gas price: ${ethers.utils.formatUnits(gasPrice, 'gwei')} gwei`);
+      } catch (err) {
+        log("Gas estimation failed: " + err.message);
+      }
     }
-  }
 
-  connectBtn.onclick = connectWallet;
-  disconnectBtn.onclick = disconnectWallet;
-  sendBtn.onclick = sendTokens;
-  swapBtn.onclick = swapTokens;
-</script>
+    function renderTxHistory() {
+      txHistoryBody.innerHTML = "";
+      txHistory.forEach(tx => {
+        const tr = document.createElement("tr");
 
-<!-- Ethers.js CDN -->
-<script src="https://cdn.ethers.io/lib/ethers-5.2.umd.min.js" type="application/javascript"></script>
+        // Link transaction hash to etherscan or your explorer (example placeholder)
+        const txLink = document.createElement("a");
+        txLink.href = `https://etherscan.io/tx/${tx.hash}`;
+        txLink.target = "_blank";
+        txLink.rel = "noopener noreferrer";
+        txLink.textContent = tx.hash.slice(0, 10) + "...";
+
+        const tdHash = document.createElement("td");
+        tdHash.appendChild(txLink);
+        tr.appendChild(tdHash);
+
+        const tdTo = document.createElement("td");
+        tdTo.textContent = tx.to;
+        tr.appendChild(tdTo);
+
+        const tdAmount = document.createElement("td");
+        tdAmount.textContent = tx.amount;
+        tr.appendChild(tdAmount);
+
+        const tdStatus = document.createElement("td");
+        tdStatus.textContent = tx.status;
+        tr.appendChild(tdStatus);
+
+        txHistoryBody.appendChild(tr);
+      });
+    }
+
+    function loadTxHistory() {
+      // TODO: Replace with actual blockchain API call for real tx history
+      // For now, simulate with empty or saved history
+      txHistory = [];
+      renderTxHistory();
+    }
+
+    function clearTxHistory() {
+      txHistory = [];
+      renderTxHistory();
+    }
+
+    // Mock price ticker fetch (replace with real API)
+    function fetchPriceTicker() {
+      // Example: Simulate price changes every 10 seconds
+      function updatePrice() {
+        // Random price between 0.5 and 2.0 USD
+        const price = (Math.random() * 1.5 + 0.5).toFixed(4);
+        priceTicker.textContent = price;
+      }
+      updatePrice();
+      setInterval(updatePrice, 10000);
+    }
+
+    // Swap button placeholder
+    swapBtn.onclick = () => {
+      const from = swapFrom.value;
+      const to = swapTo.value;
+      const amount = swapAmountInput.value;
+
+      if (from === to) {
+        alert("Please select two different tokens to swap.");
+        return;
+      }
+      if (!amount || isNaN(amount) || Number(amount) <= 0) {
+        alert("Enter a valid amount to swap.");
+        return;
+      }
+      alert(`Swap feature is coming soon!\nSwap ${amount} ${from} to ${to}.`);
+      swapAmountInput.value = "";
+    };
+
+    connectBtn.onclick = connectWallet;
+    disconnectBtn.onclick = disconnectWallet;
+    sendBtn.onclick = sendTokens;
+    gasEstimateBtn.onclick = estimateGasFee;
+
+  </script>
 
 </body>
 </html>
