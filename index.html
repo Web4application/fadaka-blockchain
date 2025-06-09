@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Fadaka Blockchain Demo</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 600px;
+      margin: 2rem auto;
+      padding: 1rem;
+      background: #f0f4f8;
+      color: #333;
+    }
+    button {
+      background: #0a74da;
+      color: white;
+      border: none;
+      padding: 0.6rem 1.2rem;
+      margin: 0.4rem 0;
+      font-size: 1rem;
+      cursor: pointer;
+      border-radius: 4px;
+    }
+    button:hover {
+      background: #065bb5;
+    }
+    #output {
+      margin-top: 1rem;
+      background: white;
+      padding: 1rem;
+      border-radius: 4px;
+      box-shadow: 0 2px 5px rgb(0 0 0 / 0.1);
+      min-height: 4rem;
+    }
+  </style>
+
+  <!-- Fadaka SDK - replace with actual SDK URL -->
+  <script src="https://cdn.fadaka.io/sdk/fadaka-sdk.min.js" defer></script>
+  
+  <!-- Your app script -->
+  <script defer>
+    document.addEventListener("DOMContentLoaded", () => {
+      const output = document.getElementById("output");
+
+      async function createWallet() {
+        if (!window.fadaka) {
+          output.textContent = "Fadaka SDK not loaded.";
+          return;
+        }
+        const wallet = await window.fadaka.Wallet.createRandom();
+        output.textContent = `Wallet created: ${wallet.address}`;
+        window.wallet = wallet;
+      }
+
+      async function deployContract() {
+        if (!window.wallet) {
+          output.textContent = "Create or connect a wallet first.";
+          return;
+        }
+        const provider = new window.fadaka.providers.JsonRpcProvider("https://rpc.fadaka.io");
+        const signer = window.wallet.connect(provider);
+
+        const contractABI = [/* Paste your ABI JSON here */];
+        const contractBytecode = "0x..."; // Paste your bytecode here
+
+        const factory = new window.fadaka.ContractFactory(contractABI, contractBytecode, signer);
+
+        output.textContent = "Deploying contract...";
+        try {
+          const contract = await factory.deploy("Hello Fadaka!");
+          await contract.deployed();
+          output.textContent = `Contract deployed at: ${contract.address}`;
+        } catch (err) {
+          output.textContent = `Deployment error: ${err.message}`;
+        }
+      }
+
+      document.getElementById("btnCreateWallet").onclick = createWallet;
+      document.getElementById("btnDeployContract").onclick = deployContract;
+    });
+  </script>
+</head>
+<body>
+  <h1>Fadaka Blockchain Demo</h1>
+  <button id="btnCreateWallet">Create Wallet</button>
+  <button id="btnDeployContract">Deploy Contract</button>
+  <div id="output">Status messages will appear here...</div>
+</body>
+</html>
