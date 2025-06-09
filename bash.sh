@@ -17,3 +17,10 @@ cd fadaka-blockchain
 
 npm install husky --save-dev
 npx husky install
+npx husky install
+npm run prepare
+npx husky add .husky/pre-commit "npm run lint"
+npx husky add .husky/pre-push "npm test"
+
+npm install eslint jest --save-dev
+
