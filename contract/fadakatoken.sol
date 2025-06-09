@@ -26,8 +26,10 @@ contract FadakaToken is ERC20, Ownable, Pausable {
         _unpause();
     }
 
-    // Override _beforeTokenTransfer to respect pause state
-    function _beforeTokenTransfer(address from, address to, uint256 amount) internal override {
+    function _beforeTokenTransfer(address from, address to, uint256 amount)
+        internal
+        override
+    {
         super._beforeTokenTransfer(from, to, amount);
         require(!paused(), "ERC20Pausable: token transfer while paused");
     }
