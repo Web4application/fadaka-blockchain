@@ -22,4 +22,7 @@ npx husky add .husky/pre-commit "npm run lint"
 npx husky add .husky/pre-push "npm test"
 
 npm install eslint jest --save-dev
-
+cd backend
+npm install
+cd frontend
+npm install
