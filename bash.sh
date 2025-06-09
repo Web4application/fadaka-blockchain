@@ -26,3 +26,8 @@ cd backend
 npm install
 cd frontend
 npm install
+
+artifacts/contracts/MyContract.sol/MyContract.json
+npm init -y
+npm install --save-dev hardhat
+npx hardhat
