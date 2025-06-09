@@ -4,10 +4,11 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/security/Pausable.sol";
+import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
-contract FadakaToken is ERC20, Ownable, Pausable {
-    constructor(uint256 initialSupply) ERC20("Fadaka", "FDK") {
-        _mint(msg.sender, initialSupply);
+contract FadakaToken is ERC20 {
+    constructor() ERC20("Fadaka Token", "FDAK") {
+        _mint(msg.sender, 1_000_000_000 * 10 ** decimals());
     }
 
     function mint(address to, uint256 amount) external onlyOwner {
