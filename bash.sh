@@ -39,4 +39,10 @@ go install github.com/daixiang0/gci@v0.11.2
 
 npx hardhat run scripts/deploy-fadaka-token.js --network fadaka
 npx hardhat console
+git clone https://github.com/Web4application/fadaka-blockchain.git
+cd fadaka-blockchain
+cd backend
+npm install
+cd frontend
+npm install
 
