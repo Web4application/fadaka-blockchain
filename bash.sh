@@ -38,3 +38,5 @@ go install go.uber.org/nilaway/cmd/nilaway@v0.0.0-20240821220108-c91e71c080b7
 go install github.com/daixiang0/gci@v0.11.2
 
 npx hardhat run scripts/deploy-fadaka-token.js --network fadaka
+npx hardhat console
+
