@@ -1,11 +1,23 @@
-// Copyright 2016 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+package main
 
-//go:build !purego
+import (
+    "golang.org/x/crypto/blake2b"
+    "fmt"
+)
 
-package sha256
+func main() {
+    // Create a new BLAKE2b hash
+    hash, err := blake2b.New256(nil) // 256-bit output
+    if err != nil {
+        fmt.Println("Error creating hash:", err)
+        return
+    }
 
-import "internal/cpu"
+    // Write data to the hash
+    data := []byte("Hello, Fadaka Blockchain!")
+    hash.Write(data)
 
-var useAsm = cpu.S390X.HasSHA256
+    // Compute the resulting hash
+    hashedData := hash.Sum(nil)
+    fmt.Printf("BLAKE2b Hash: %x\n", hashedData)
+}
