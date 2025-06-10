@@ -1,1 +1,1 @@
-npx hardhat run scripts/deploy.js --network <network-name>
+npx hardhat run scripts/deploy.js --network <fadaka>
