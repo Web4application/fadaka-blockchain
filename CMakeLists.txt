@@ -20,3 +20,18 @@ target_link_libraries(FadakaApp PRIVATE some_library)
 # Define installation rules
 install(TARGETS FadakaApp DESTINATION bin)
 install(DIRECTORY include/ DESTINATION include)
+cmake_minimum_required(VERSION 3.1)
+project(oracle-client)
+
+set(CMAKE_CXX_STANDARD 11)
+
+find_package(oatpp REQUIRED)
+find_package(oatpp-curl REQUIRED)
+
+include_directories(${OATPP_INCLUDE_DIRS})
+
+add_executable(oracle-client main.cpp)
+target_link_libraries(oracle-client
+  oatpp::oatpp
+  oatpp::oatpp-curl
+)
