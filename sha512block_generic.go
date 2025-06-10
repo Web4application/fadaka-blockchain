@@ -1,11 +1,23 @@
-// Copyright 2016 The Go Authors. All rights reserved.
-// Use of this source code is governed by a BSD-style
-// license that can be found in the LICENSE file.
+package main
 
-//go:build (!amd64 && !arm64 && !ppc64 && !ppc64le && !riscv64 && !s390x) || purego
+import (
+    "crypto/blake2b"
+    "fmt"
+)
 
-package sha512
+func main() {
+    // Create a new BLAKE2b hash
+    hash, err := blake2b.New256(nil) // 256-bit output
+    if err != nil {
+        fmt.Println("Error creating hash:", err)
+        return
+    }
 
-func block(dig *digest, p []byte) {
-	blockGeneric(dig, p)
+    // Write data to the hash
+    data := []byte("Hello, Fadaka Blockchain!")
+    hash.Write(data)
+
+    // Compute the resulting hash
+    hashedData := hash.Sum(nil)
+    fmt.Printf("BLAKE2b Hash: %x\n", hashedData)
 }
