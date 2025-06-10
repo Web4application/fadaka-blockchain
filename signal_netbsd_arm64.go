@@ -1,3 +1,5 @@
+//go:build netbsd || linux || darwin || windows
+
 package runtime
 
 import (
@@ -18,7 +20,7 @@ type sigctxt struct {
     ctxt unsafe.Pointer
 }
 
-// Optimized register access
+// Cross-platform register access logic
 func (c *sigctxt) regs() *mcontextt {
     return regPool.Get().(*mcontextt)
 }
