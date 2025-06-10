@@ -1,3 +1,4 @@
+npx hardhat compile
 npm install --save-dev hardhat
 npx hardhat
 npx hardhat run scripts/deploy-all.js --network fadaka
